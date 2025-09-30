@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Process Cooler Simulator (Peng-Robinson EoS)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Roboto+Mono&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #f4f7f9;
+            --card-bg-color: #ffffff;
+            --primary-color: #005a9c;
+            --secondary-color: #d62828;
+            --text-color: #222222;
+            --light-text-color: #666666;
+            --border-color: #e1e4e8;
+            --header-font: 'Roboto', sans-serif;
+            --mono-font: 'Roboto Mono', monospace;
+        }
+
+        body {
+            font-family: var(--header-font);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1.5rem;
+            text-align: center;
+            border-bottom: 4px solid var(--secondary-color);
+        }
+
+        header h1 {
+            margin: 0;
+            font-weight: 700;
+        }
+
+        header p {
+            margin: 0.5rem 0 0;
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .card {
+            background-color: var(--card-bg-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .card h2 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            margin-top: 0;
+        }
+
+        .instruction {
+            color: var(--light-text-color);
+            font-style: italic;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: #f9fafb;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-color);
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: #f1f1f1;
+            font-weight: 700;
+        }
+        
+        .ref-table {
+            font-size: 0.9rem;
+        }
+        .ref-table th {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .button-primary {
+            display: block;
+            width: 100%;
+            padding: 0.8rem;
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .button-primary:hover {
+            background-color: #b01f1f;
+        }
+
+        .results-card h2 {
+            color: #2a9d8f; /* Green for results */
+        }
+
+        .results-grid {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+            flex-wrap: wrap;
+        }
+
+        .results-grid > div {
+             padding: 10px;
+        }
+
+        .results-grid strong {
+            font-size: 2rem;
+            color: #2a9d8f;
+            display: block;
+        }
+
+        .unit {
+            font-size: 1rem;
+            color: var(--light-text-color);
+        }
+
+        .equation-card .equation {
+            margin-bottom: 1.5rem;
+            padding: 1.25rem;
+            background-color: #f9fafb;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+        .equation-card .formula {
+            font-family: var(--mono-font);
+            font-size: 1.1rem;
+            color: var(--primary-color);
+            margin: 0 0 0.75rem 0;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px dashed #eee;
+        }
+        .equation-card .description {
+            font-size: 0.9rem;
+            color: var(--text-color);
+            margin: 0;
+        }
+        .equation-card .notation {
+            font-family: var(--mono-font);
+            font-size: 0.85rem;
+            color: #555;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px dashed #eee;
+        }
+        .equation-card .notation code {
+            background-color: #eef2f5;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        
+        #error-modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        #modal-message {
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            color: var(--text-color);
+        }
+        #modal-close-btn {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        footer {
+            text-align: center;
+            padding: 1rem;
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            color: var(--light-text-color);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Advanced Process Cooler Simulator</h1>
+        <p>A web-based tool for calculating real fluid heat duty and refrigerant requirements using the Peng-Robinson Equation of State.</p>
+    </header>
+
+    <main>
+        <div class="container">
+            <section class="card">
+                <h2>1. Natural Gas Stream</h2>
+                <p class="instruction">Enter the composition and process conditions. Vapor fractions will update automatically.</p>
+                
+                <div class="input-grid">
+                    <div class="input-group">
+                        <label for="ng-mass-flow">Mass Flow Rate (lbm/hr)</label>
+                        <input type="number" id="ng-mass-flow" class="auto-calc-vf" placeholder="e.g., 100000">
+                    </div>
+                    <div class="input-group">
+                        <label for="ng-temp-in">Inlet Temperature (°F)</label>
+                        <input type="number" id="ng-temp-in" class="auto-calc-vf" placeholder="e.g., 260">
+                    </div>
+                    <div class="input-group">
+                        <label for="ng-temp-out">Outlet Temperature (°F)</label>
+                        <input type="number" id="ng-temp-out" class="auto-calc-vf" placeholder="e.g., 100">
+                    </div>
+                    <div class="input-group">
+                        <label for="ng-pressure">Pressure (psia)</label>
+                        <input type="number" id="ng-pressure" class="auto-calc-vf" placeholder="e.g., 1015">
+                    </div>
+                </div>
+
+                <h3>Composition (Mole Fraction, yi)</h3>
+                <table id="composition-table">
+                    <thead>
+                        <tr>
+                            <th>Component</th>
+                            <th>Mole Fraction (yi)</th>
+                            <th>Inlet Ki</th>
+                            <th>Outlet Ki</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+                 <button id="calculate-duty-button" class="button-primary">Calculate Ideal Heat Duty (Mixture)</button>
+            </section>
+            
+            <section class="card results-card">
+                <h2>Natural Gas Analysis Results</h2>
+                <div class="results-grid">
+                    <div>
+                        <p>Inlet Vapor Fraction (β)</p>
+                        <strong id="ng-vf-inlet">---</strong>
+                    </div>
+                     <div>
+                        <p>Outlet Vapor Fraction (β)</p>
+                        <strong id="ng-vf-outlet">---</strong>
+                    </div>
+                    <div>
+                        <p>Ideal Heat Duty (Mixture, Q)</p>
+                        <strong id="heat-duty">---</strong> <span class="unit">Btu/hr</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card">
+                <h2>2. Refrigerant System</h2>
+                <p class="instruction">Select a pure refrigerant and its desired operating condition for the evaporator.</p>
+                 <div class="input-grid">
+                     <div class="input-group">
+                        <label for="refrigerant-type">Refrigerant Type</label>
+                        <select id="refrigerant-type">
+                            <option value="Propane">Propane</option>
+                            <option value="n-Butane">n-Butane</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="refrigerant-condition">Operating Condition (Evaporator)</label>
+                        <select id="refrigerant-condition">
+                            <!-- Options populated by JS -->
+                        </select>
+                    </div>
+                </div>
+                <button id="calculate-refrigerant-button" class="button-primary">Calculate Refrigerant Mass Flow</button>
+            </section>
+            
+            <section class="card results-card">
+                 <h2>Refrigerant Analysis Results</h2>
+                 <div class="results-grid">
+                    <div>
+                        <p>Inlet State (Assumed)</p>
+                        <strong id="ref-inlet-state">Sat. Liquid</strong>
+                    </div>
+                     <div>
+                        <p>Outlet State (Assumed)</p>
+                        <strong id="ref-outlet-state">Sat. Vapor</strong>
+                    </div>
+                    <div>
+                        <p>Required Mass Flow</p>
+                        <strong id="refrigerant-flow">---</strong> <span class="unit">lbm/hr</span>
+                    </div>
+                </div>
+            </section>
+            
+            <section class="card">
+                <h2>Reference: Refrigerant Saturated Conditions Database</h2>
+                <p class="instruction">Common operating points for gas chilling applications sourced from NIST data.</p>
+                <div id="ref-tables-container" style="display: flex; gap: 2rem; flex-wrap: wrap;">
+                    </div>
+            </section>
+
+            <section class="card equation-card">
+                <h2>Governing Equations & Methodology</h2>
+                 <div class="equation">
+                    <p class="formula">ΔH_real = ΔH_ideal + H_residual</p>
+                    <p class="description">The total (real) enthalpy change is the sum of the ideal gas enthalpy change and the residual enthalpy contribution calculated using an Equation of State (EoS).</p>
+                     <p class="notation"><code>ΔH_real</code>: Real Enthalpy (Btu/lbmol) <br> <code>ΔH_ideal</code>: Ideal Gas Enthalpy (Btu/lbmol) <br> <code>H_residual</code>: Residual Enthalpy (Btu/lbmol)</p>
+                </div>
+                <div class="equation">
+                    <p class="formula">P = [RT / (Vₘ - b)] - [a(T) / (Vₘ(Vₘ + b) + b(Vₘ - b))]</p>
+                    <p class="description">The Peng-Robinson Equation of State (EoS) is used to model the Pressure-Volume-Temperature (PVT) behavior of real fluids and is the basis for all non-ideal property calculations.</p>
+                    <p class="notation"><code>P</code>: Pressure (psia) <br> <code>T</code>: Temperature (°R) <br> <code>Vₘ</code>: Molar Volume (ft³/lbmol) <br> <code>R</code>: Universal Gas Constant (10.73) <br> <code>a, b</code>: EoS Parameters</p>
+                </div>
+                <div class="equation">
+                    <p class="formula">Σ [yi * (Ki - 1)] / [1 + β * (Ki - 1)] = 0</p>
+                    <p class="description">The Rachford-Rice flash equation is solved iteratively to find the vapor fraction (β) of a mixture at a given temperature and pressure, which separates the stream into its liquid and vapor phases.</p>
+                    <p class="notation"><code>yi</code>: Mole fraction of component i <br> <code>Ki</code>: Equilibrium ratio of component i <br> <code>β</code>: Vapor Fraction (dimensionless)</p>
+                </div>
+                 <div class="equation">
+                    <p class="formula">Hᴿ = RT(Z-1) + [T(da/dT) - a] / [2√2 b] * ln(...)</p>
+                    <p class="description">The Residual Enthalpy is calculated from the EoS to quantify the fluid's deviation from ideal gas behavior. This is key for accurate energy calculations.</p>
+                    <p class="notation"><code>Hᴿ</code>: Residual Enthalpy (Btu/lbmol) <br> <code>Z</code>: Compressibility Factor <br> <code>T(da/dT) - a</code>: EoS parameter derivative term</p>
+                </div>
+                 <div class="equation">
+                    <p class="formula">a_mix = Σ Σ yi·yj·(ai·aj)⁰⁵  |  b_mix = Σ yi·bi</p>
+                    <p class="description">The van der Waals mixing rules are used to calculate the EoS parameters (a and b) for a fluid mixture based on the pure component parameters and their respective mole fractions.</p>
+                    <p class="notation"><code>a_mix, b_mix</code>: EoS parameters for the mixture <br> <code>ai, bi</code>: EoS parameters for pure component i <br> <code>yi, yj</code>: Mole fractions of components i and j</p>
+                </div>
+            </section>
+        </div>
+    </main>
+    
+     <div id="error-modal">
+        <div class="modal-content">
+            <p id="modal-message">This is an error message.</p>
+            <button id="modal-close-btn">Close</button>
+        </div>
+    </div>
+    
+    <footer>
+        <p>&copy; 2025 Process Engineering Tools. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // ----- DATABASE PROPERTI -----
+        const R_UNIVERSAL_SI = 8.314; // J/mol-K
+        const R_UNIVERSAL_US = 10.73159; // psia·ft³/(lbmol·°R)
+
+        const componentData = {
+            "Methane": { Tc: 343.01, Pc: 667.0, omega: 0.012, MW: 16.04 },
+            "Ethane": { Tc: 549.58, Pc: 706.7, omega: 0.100, MW: 30.07 },
+            "Propane": { Tc: 665.70, Pc: 616.0, omega: 0.152, MW: 44.10 },
+            "n-Butane": { Tc: 765.22, Pc: 550.6, omega: 0.200, MW: 58.12 },
+            "iso-Butane": { Tc: 734.06, Pc: 527.9, omega: 0.181, MW: 58.12 },
+            "n-Pentane": { Tc: 845.5, Pc: 488.8, omega: 0.252, MW: 72.15 },
+            "n-Hexane": { Tc: 913.7, Pc: 438.7, omega: 0.301, MW: 86.18 },
+            "Carbon Dioxide": { Tc: 547.43, Pc: 1070.0, omega: 0.224, MW: 44.01 },
+            "Nitrogen": { Tc: 227.16, Pc: 492.4, omega: 0.039, MW: 28.01 }
+        };
+
+        // Ideal Gas Cp Constants for integral ∫(A+BT+CT^2+DT^-2)dT
+        // For use with T in Kelvin. Result is dimensionless (H_ideal/R).
+        const idealCpDataSI = {
+            "Methane":       { A: 1.702, B: 9.081E-3, C: -2.164E-6, D: 0 },
+            "Ethane":        { A: 1.131, B: 19.225E-3, C: -5.561E-6, D: 0 },
+            "Propane":       { A: 1.213, B: 28.785E-3, C: -8.824E-6, D: 0 },
+            "n-Butane":      { A: 1.935, B: 36.915E-3, C: -11.402E-6, D: 0 },
+            "iso-Butane":    { A: 1.677, B: 37.853E-3, C: -11.945E-6, D: 0 },
+            "n-Pentane":     { A: 2.464, B: 45.351E-3, C: -14.113E-6, D: 0 },
+            "n-Hexane":      { A: 3.025, B: 53.722E-3, C: -16.791E-6, D: 0 },
+            "Carbon Dioxide":{ A: 5.457, B: 1.045E-3, C: 0, D: -1.157E5 },
+            "Nitrogen":      { A: 3.280, B: 0.593E-3, C: 0, D: 4.0E3 }
+        };
+        
+        const refrigerantConditions = {
+            "Propane": [
+                { T: -17.5317, P: 26.8 }, { T: -14.2873, P: 28.7 }, { T: -6.9165, P: 33.4 }, { T: 2.837365, P: 40.5 },
+                { T: 3.852501, P: 41.3 }, { T: 5.96064, P: 43.0 }, { T: 12.03896, P: 48.2 }, { T: 17.43092, P: 53.2 },
+                { T: 22.2581, P: 58.0 }, { T: 23.8952, P: 59.7 }
+            ],
+            "n-Butane": [
+                { T: 31.32, P: 14.7 }, { T: 40.06, P: 17.6 }, { T: 47.00927, P: 20.21 }, { T: 57.7, P: 24.8 },
+                { T: 64.27236, P: 28.0 }, { T: 70.65, P: 31.4 }, { T: 91.13744, P: 44.5 }, { T: 96.20158, P: 48.3 },
+                { T: 107.8785, P: 58.0 }, { T: 111.4046, P: 61.2 }
+            ]
+        };
+
+        // ----- SCRIPT UTAMA APLIKASI -----
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Global Variables & Initial Setup ---
+            const compositionTableBody = document.querySelector('#composition-table tbody');
+            const refTablesContainer = document.getElementById('ref-tables-container');
+            const refrigerantTypeSelect = document.getElementById('refrigerant-type');
+            const refrigerantConditionSelect = document.getElementById('refrigerant-condition');
+            let ngHeatDuty = 0;
+
+            // --- Initial Population of UI ---
+            Object.keys(idealCpDataSI).forEach(name => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${name}</td>
+                    <td><input type="number" class="composition-input auto-calc-vf" data-component="${name}" value="0.0" step="0.01" min="0"></td>
+                    <td id="ki-inlet-${name}">-</td>
+                    <td id="ki-outlet-${name}">-</td>
+                `;
+                compositionTableBody.appendChild(row);
+            });
+            
+            populateReferenceTables();
+            updateRefrigerantConditions();
+            
+            // --- Event Listeners ---
+            document.getElementById('calculate-duty-button').addEventListener('click', calculateNaturalGasDuty);
+            document.getElementById('calculate-refrigerant-button').addEventListener('click', calculateRefrigerantFlow);
+            document.querySelectorAll('.auto-calc-vf').forEach(el => el.addEventListener('input', runVFFlashCalculation));
+            refrigerantTypeSelect.addEventListener('change', updateRefrigerantConditions);
+            
+            // --- Modal Logic ---
+            const modal = document.getElementById('error-modal');
+            const modalMsg = document.getElementById('modal-message');
+            const closeBtn = document.getElementById('modal-close-btn');
+            closeBtn.onclick = () => { modal.style.display = "none"; }
+            window.onclick = (event) => { if (event.target == modal) { modal.style.display = "none"; } }
+            
+            function showAlert(message) {
+                modalMsg.textContent = message;
+                modal.style.display = "block";
+            }
+
+            // --- Core Calculation Functions ---
+            
+            function runVFFlashCalculation() {
+                const inputs = getNaturalGasInputs(false);
+                if(!inputs || !inputs.composition || Object.keys(inputs.composition).length === 0 || isNaN(inputs.tempIn) || isNaN(inputs.tempOut) || isNaN(inputs.pressure)) {
+                    document.getElementById('ng-vf-inlet').textContent = "---";
+                    document.getElementById('ng-vf-outlet').textContent = "---";
+                    return;
+                };
+                
+                const inletFlash = rachfordRiceFlash(inputs.tempIn, inputs.pressure, inputs.composition);
+                document.getElementById('ng-vf-inlet').textContent = inletFlash.beta.toFixed(3);
+                for(const [name, Ki] of Object.entries(inletFlash.Ki_values)) {
+                    document.getElementById(`ki-inlet-${name}`).textContent = Ki.toFixed(2);
+                }
+                const outletFlash = rachfordRiceFlash(inputs.tempOut, inputs.pressure, inputs.composition);
+                document.getElementById('ng-vf-outlet').textContent = outletFlash.beta.toFixed(3);
+                 for(const [name, Ki] of Object.entries(outletFlash.Ki_values)) {
+                    document.getElementById(`ki-outlet-${name}`).textContent = Ki.toFixed(2);
+                }
+            }
+
+            function calculateNaturalGasDuty() {
+                const inputs = getNaturalGasInputs(true);
+                if (!inputs) return;
+                
+                // Kembali ke model Campuran Gas Ideal yang stabil.
+                const inletState = calculateStreamEnthalpy(inputs.tempIn, inputs.pressure, inputs.composition, true);
+                const outletState = calculateStreamEnthalpy(inputs.tempOut, inputs.pressure, inputs.composition, true);
+                
+                const deltaH_ideal_mixture = outletState.H_vapor - inletState.H_vapor; // H_vapor di sini adalah H_ideal
+                const mixtureMW = inletState.mixtureMW;
+                const totalMolarFlow = inputs.massFlow / mixtureMW;
+
+                ngHeatDuty = deltaH_ideal_mixture * totalMolarFlow;
+                document.getElementById('heat-duty').textContent = ngHeatDuty.toLocaleString('en-US', { maximumFractionDigits: 0 });
+            }
+            
+            function calculateRefrigerantFlow() {
+                if (ngHeatDuty === 0) {
+                    showAlert("Please calculate the Natural Gas Heat Duty first.");
+                    return;
+                }
+                
+                const selectedCondition = refrigerantConditionSelect.value;
+                if (!selectedCondition) {
+                    showAlert("Please select a refrigerant operating condition.");
+                    return;
+                }
+
+                const [tempF_str, pressure_str] = selectedCondition.split(',');
+                const temp_R = parseFloat(tempF_str) + 459.67;
+                const pressure_psia = parseFloat(pressure_str);
+                const refrigerantType = refrigerantTypeSelect.value;
+                const refComposition = { [refrigerantType]: 1.0 };
+                
+                const refrigerantState = calculateStreamEnthalpy(temp_R, pressure_psia, refComposition, false);
+                
+                const deltaH_molar_vap = refrigerantState.H_vapor - refrigerantState.H_liquid;
+                const refrigerantMW = componentData[refrigerantType].MW;
+                const delta_h_mass = deltaH_molar_vap / refrigerantMW;
+
+                if (delta_h_mass <= 0 || isNaN(delta_h_mass)) {
+                    showAlert("Calculation error for refrigerant. Enthalpy of vaporization is invalid. Please check conditions or data.");
+                    return;
+                }
+
+                const requiredMassFlow = Math.abs(ngHeatDuty) / delta_h_mass;
+                
+                document.getElementById('refrigerant-flow').textContent = requiredMassFlow.toLocaleString('en-US', { maximumFractionDigits: 0 });
+            }
+
+            function calculateIdealMixtureEnthalpy(T_R, composition) {
+                let H_ideal_mix_SI_over_R = 0;
+                const T_ref_K = 288.15; // 15°C
+                const T_K = T_R / 1.8;
+                for (const [name, yi] of Object.entries(composition)) {
+                    if (yi <= 0 || !idealCpDataSI[name]) continue;
+                    const cp = idealCpDataSI[name];
+                    const H_ideal_comp_over_R = cp.A * (T_K - T_ref_K) +
+                                              (cp.B / 2) * (T_K**2 - T_ref_K**2) +
+                                              (cp.C / 3) * (T_K**3 - T_ref_K**3) -
+                                              cp.D * ((1/T_K) - (1/T_ref_K));
+                    H_ideal_mix_SI_over_R += yi * H_ideal_comp_over_R;
+                }
+                const H_ideal_mix_J_mol = H_ideal_mix_SI_over_R * R_UNIVERSAL_SI;
+                return H_ideal_mix_J_mol * 0.42992; // Convert J/mol to Btu/lbmol
+            }
+
+            function calculateStreamEnthalpy(T_R, P_psia, composition, isIdeal = false) {
+                const H_ideal_mix = calculateIdealMixtureEnthalpy(T_R, composition);
+                const mixtureMW = Object.entries(composition).reduce((sum, [name, yi]) => sum + yi * componentData[name].MW, 0);
+
+                if (isIdeal) {
+                    return { H_liquid: H_ideal_mix, H_vapor: H_ideal_mix, mixtureMW };
+                }
+
+                const {a_mix, b_mix, term_TdadT_minus_a_mix} = calculateMixingParameters(T_R, composition);
+                const A = a_mix * P_psia / (R_UNIVERSAL_US * T_R)**2;
+                const B = b_mix * P_psia / (R_UNIVERSAL_US * T_R);
+                const {Z_liquid, Z_vapor} = getCompressibilityFactors(A, B);
+                
+                const log_term_vapor = Math.log((Z_vapor + (1 + Math.sqrt(2)) * B) / (Z_vapor + (1 - Math.sqrt(2)) * B));
+                const H_residual_vapor = R_UNIVERSAL_US * T_R * (Z_vapor - 1) + 
+                                       (term_TdadT_minus_a_mix / (2.828427 * b_mix)) * log_term_vapor;
+
+                const log_term_liquid = Math.log((Z_liquid + (1 + Math.sqrt(2)) * B) / (Z_liquid + (1 - Math.sqrt(2)) * B));
+                const H_residual_liquid = R_UNIVERSAL_US * T_R * (Z_liquid - 1) + 
+                                       (term_TdadT_minus_a_mix / (2.828427 * b_mix)) * log_term_liquid;
+                                       
+                return { 
+                    H_liquid: H_ideal_mix + H_residual_liquid, 
+                    H_vapor: H_ideal_mix + H_residual_vapor, 
+                    mixtureMW 
+                };
+            }
+
+            function calculateMixingParameters(T_R, composition) {
+                 const compNames = Object.keys(composition).filter(name => composition[name] > 0);
+                let b_mix = 0;
+                let a_mix = 0;
+                let TdadT_mix = 0;
+                const compParams = {};
+
+                for (const name of compNames) {
+                    const comp = componentData[name];
+                    const yi = composition[name];
+                    const b_i = 0.07780 * R_UNIVERSAL_US * comp.Tc / comp.Pc;
+                    const kappa_i = 0.37464 + 1.54226 * comp.omega - 0.26992 * comp.omega**2;
+                    const ac_i = 0.45724 * (R_UNIVERSAL_US**2 * comp.Tc**2) / comp.Pc;
+                    const Tr = T_R / comp.Tc;
+                    const sqrt_alpha = (1 + kappa_i * (1 - Math.sqrt(Tr)));
+                    const a_i = ac_i * sqrt_alpha**2;
+                    const TdadT_i = -ac_i * kappa_i * Math.sqrt(Tr) * sqrt_alpha;
+
+
+                    compParams[name] = { a_i, b_i, TdadT_i, yi };
+                    b_mix += yi * b_i;
+                }
+
+                for (const name_i in compParams) {
+                    for (const name_j in compParams) {
+                        const p_i = compParams[name_i];
+                        const p_j = compParams[name_j];
+                        const sqrt_ai_aj = Math.sqrt(p_i.a_i * p_j.a_j);
+                        if (isNaN(sqrt_ai_aj)) continue;
+
+                        a_mix += p_i.yi * p_j.yi * sqrt_ai_aj;
+                        
+                         // Perlindungan pembagian dengan nol
+                         if (p_i.a_i > 1e-12 && p_j.a_j > 1e-12) {
+                            const term_i = p_i.TdadT_i / p_i.a_i;
+                            const term_j = p_j.TdadT_j / p_j.a_j;
+                            TdadT_mix += p_i.yi * p_j.yi * 0.5 * sqrt_ai_aj * (term_i + term_j);
+                        }
+                    }
+                }
+                return {a_mix, b_mix, term_TdadT_minus_a_mix: TdadT_mix - a_mix};
+            }
+            
+            function rachfordRiceFlash(T_R, P_psia, composition) {
+                const Ki_values = {};
+                for (const name in composition) {
+                    if (composition[name] > 0) {
+                        const comp = componentData[name];
+                        const Tr = T_R / comp.Tc;
+                        Ki_values[name] = (comp.Pc / P_psia) * Math.exp(5.37 * (1 + comp.omega) * (1 - 1/Tr));
+                    }
+                }
+                let beta = 0.5;
+                for(let i=0; i < 100; i++) {
+                    let f = 0, df = 0;
+                    for (const name in composition) {
+                        if (composition[name] > 0) {
+                           const yi = composition[name];
+                            const Ki = Ki_values[name];
+                            f += yi * (Ki - 1) / (1 + beta * (Ki - 1));
+                            df -= yi * (Ki - 1)**2 / (1 + beta * (Ki - 1))**2;
+                        }
+                    }
+                    if(Math.abs(f) < 1e-9 || Math.abs(df) < 1e-9) break;
+                    beta = beta - f/df;
+                    if(beta < 0) beta = 0;
+                    if(beta > 1) beta = 1;
+                }
+                return { beta, Ki_values };
+            }
+            
+            function getNaturalGasInputs(showAlertsFlag) {
+                const massFlow = parseFloat(document.getElementById('ng-mass-flow').value);
+                const tempIn = parseFloat(document.getElementById('ng-temp-in').value) + 459.67;
+                const tempOut = parseFloat(document.getElementById('ng-temp-out').value) + 459.67;
+                const pressure = parseFloat(document.getElementById('ng-pressure').value);
+                
+                const composition = {};
+                let totalFraction = 0;
+                document.querySelectorAll('.composition-input').forEach(input => {
+                    const val = parseFloat(input.value);
+                    if (!isNaN(val) && val > 0) {
+                        composition[input.dataset.component] = val;
+                        totalFraction += val;
+                    }
+                });
+
+                if (showAlertsFlag) {
+                    if (isNaN(massFlow) || isNaN(tempIn) || isNaN(tempOut) || isNaN(pressure) || totalFraction === 0) {
+                        showAlert("Please fill all input fields for Natural Gas."); return null;
+                    }
+                    if (Math.abs(totalFraction - 1.0) > 1e-6) {
+                        if (Math.abs(totalFraction - 1.0) < 0.02) { 
+                            for(const name in composition) {
+                                composition[name] /= totalFraction;
+                            }
+                        } else {
+                            showAlert(`Total mole fraction must be 1.0. Current total is ${totalFraction.toFixed(3)}.`); 
+                            return null;
+                        }
+                    }
+                }
+                return { massFlow, tempIn, tempOut, pressure, composition };
+            }
+
+            function getCompressibilityFactors(A, B) {
+                const c2 = -(1-B);
+                const c1 = (A - 3*B**2 - 2*B);
+                const c0 = -(A*B - B**2 - B**3);
+                
+                let roots = solveCubic(c2, c1, c0);
+                
+                if (roots.length === 0 || roots.some(isNaN)) {
+                    roots = solveCubicZ_numerical(A, B);
+                }
+                
+                if (roots.length === 0) return { Z_liquid: B, Z_vapor: 1.0 }; 
+                if (roots.length === 1) return { Z_liquid: roots[0], Z_vapor: roots[0] };
+                
+                return { Z_liquid: Math.min(...roots), Z_vapor: Math.max(...roots) };
+            }
+
+            function solveCubicZ_numerical(A, B) {
+                const f = (Z) => Z**3 - (1 - B) * Z**2 + (A - 3*B**2 - 2*B) * Z - (A*B - B**2 - B**3);
+                const df = (Z) => 3*Z**2 - 2*(1 - B)*Z + (A - 3*B**2 - 2*B);
+
+                let Z_vapor = 1.0;
+                for (let i=0; i<100; i++) {
+                    const f_val = f(Z_vapor);
+                    const df_val = df(Z_vapor);
+                    if (Math.abs(df_val) < 1e-9) break;
+                    const newZ = Z_vapor - f_val / df_val;
+                    if (Math.abs(newZ - Z_vapor) < 1e-7 || isNaN(newZ)) break;
+                    Z_vapor = newZ;
+                }
+
+                let Z_liquid = B;
+                 for (let i=0; i<100; i++) {
+                    const f_val = f(Z_liquid);
+                    const df_val = df(Z_liquid);
+                    if (Math.abs(df_val) < 1e-9) break;
+                    const newZ = Z_liquid - f_val / df_val;
+                    if (Math.abs(newZ - Z_liquid) < 1e-7 || isNaN(newZ)) break;
+                    Z_liquid = newZ;
+                }
+                
+                const roots = [Z_liquid, Z_vapor].filter(r => r > B && !isNaN(r));
+                return [...new Set(roots)]; 
+            }
+
+            function solveCubic(a, b, c) {
+                const Q = (3*b - a**2)/9;
+                const R = (9*a*b - 27*c - 2*a**3)/54;
+                const D = Q**3 + R**2;
+                const roots = [];
+
+                if (D >= 0) {
+                    const S = Math.cbrt(R + Math.sqrt(D));
+                    const T = Math.cbrt(R - Math.sqrt(D));
+                    roots.push(-a/3 + (S + T));
+                } else {
+                    const arg = R/Math.sqrt(-(Q**3));
+                    const clamped_arg = Math.max(-1, Math.min(1, arg));
+                    const th = Math.acos(clamped_arg);
+                    roots.push(2*Math.sqrt(-Q)*Math.cos(th/3) - a/3);
+                    roots.push(2*Math.sqrt(-Q)*Math.cos((th + 2*Math.PI)/3) - a/3);
+                    roots.push(2*Math.sqrt(-Q)*Math.cos((th + 4*Math.PI)/3) - a/3);
+                }
+                return roots.filter(r => r > 0);
+            }
+            
+            // --- UI Population Functions ---
+            
+            function updateRefrigerantConditions() {
+                const selectedType = refrigerantTypeSelect.value;
+                const conditions = refrigerantConditions[selectedType];
+                refrigerantConditionSelect.innerHTML = '';
+
+                conditions.forEach(cond => {
+                    const option = document.createElement('option');
+                    option.value = `${cond.T},${cond.P}`;
+                    option.textContent = `${cond.T.toFixed(2)} °F / ${cond.P.toFixed(1)} psia`;
+                    refrigerantConditionSelect.appendChild(option);
+                });
+            }
+            
+            function populateReferenceTables() {
+                refTablesContainer.innerHTML = '';
+                for(const type in refrigerantConditions){
+                    const div = document.createElement('div');
+                    div.style.flex = '1';
+                    div.style.minWidth = '250px';
+                    
+                    const h4 = document.createElement('h4');
+                    h4.textContent = type;
+                    
+                    const table = document.createElement('table');
+                    table.className = 'ref-table';
+                    table.innerHTML = `<thead><tr><th>Temp (°F)</th><th>Pressure (psia)</th></tr></thead>`;
+                    const tbody = document.createElement('tbody');
+                    refrigerantConditions[type].forEach(cond => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `<td>${cond.T.toFixed(2)}</td><td>${cond.P.toFixed(1)}</td>`;
+                        tbody.appendChild(row);
+                    });
+                    table.appendChild(tbody);
+                    
+                    div.appendChild(h4);
+                    div.appendChild(table);
+                    refTablesContainer.appendChild(div);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+
